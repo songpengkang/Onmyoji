@@ -23,6 +23,9 @@ WM_MOUSEMOVE = 0x0200
 WM_LBUTTONDOWN = 0x0201
 WM_LBUTTONUP = 0x202
 
+# 图片路径
+img_kaishi = './duibi_img/huodong.png'
+img_jixu = './duibi_img/jixu.png'
 # 排除缩放干扰
 windll.user32.SetProcessDPIAware()
 
@@ -100,28 +103,57 @@ def left_up(handle: HWND, x: int, y: int):
     PostMessageW(handle, WM_LBUTTONUP, wparam, lparam)
 
 
+def youxi(img_bg,img_path):
+    templete_img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+    result = cv2.matchTemplate(img_bg, templete_img, cv2.TM_CCORR_NORMED)
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+    top_left = max_loc
+    h, w = templete_img.shape[:2]
+    bottom_right = top_left[0] + w, top_left[1] + h
+    zuobiao_x = random.randint(top_left[0], bottom_right[0])
+    zuobiao_y = random.randint(top_left[1], bottom_right[1])
+    return zuobiao_x, zuobiao_y, max_val, top_left, bottom_right
+
+
 if __name__ == "__main__":
     if not windll.shell32.IsUserAnAdmin():
         # 不是管理员就提权
         windll.shell32.ShellExecuteW(
             None, "runas", sys.executable, __file__, None, 1)
     handle = windll.user32.FindWindowW(None, "阴阳师-网易游戏")
-    image = capture(handle)
-    # 转为灰度图
-    game = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
     # 游戏开始界面
-    tiaozhan1 = cv2.imread('./duibi_img/tiaozhan1.png', cv2.IMREAD_GRAYSCALE)
-    result = cv2.matchTemplate(game, tiaozhan1, cv2.TM_CCORR_NORMED)
-    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-    top_left = max_loc
-    h, w = tiaozhan1.shape[:2]
-    bottom_right = top_left[0] + w, top_left[1] + h
-    cv2.rectangle(image, top_left, bottom_right, (0, 0, 255), 2)
-    zuobiao_x = random.randint(960, 1090)
-    zuobiao_y = random.randint(500, 630)
-    left_down(handle, zuobiao_x, zuobiao_y)
-    time.sleep(random.uniform(0.1, 0.3))
-    left_up(handle, zuobiao_x, zuobiao_y)
-    time.sleep(1)
-    # 游戏结束界面
+    while True:
+        image = capture(handle)
+        # 转为灰度图
+        game = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
+        game_kaishi = youxi(game, img_kaishi)
+        print('游戏等待开始中')
+        print(game_kaishi[2])
+        if game_kaishi[2] > 0.94:
+            time.sleep(random.uniform(1.1,2.2))
+            left_down(handle, game_kaishi[0], game_kaishi[1])
+            time.sleep(random.uniform(0.5, 1))
+            left_up(handle, game_kaishi[0], game_kaishi[1])
+            print('游戏已经开始了')
+            time.sleep(5)
+            while True:
+                image = capture(handle)
+                game1 = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
+                game_jixu = youxi(game1, img_jixu)
+                # cv2.rectangle(game1, game_jixu[3], game_jixu[4], (0, 0, 255), 2)
+                # cv2.imshow('Match Template', game1)
+                # cv2.waitKey()
+                print('游戏进行中')
+                print(game_jixu[2])
+                if game_jixu[2] > 0.99:
+                    time.sleep(random.uniform(1.1, 2.2))
+                    left_down(handle, game_jixu[0], game_jixu[1])
+                    time.sleep(random.uniform(0.5, 1.0))
+                    left_up(handle, game_jixu[0], game_jixu[1])
+                    print('已经完成了点击游戏继续操作')
+                    break
+
+
+
+
 
