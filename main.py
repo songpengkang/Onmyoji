@@ -149,15 +149,15 @@ if __name__ == "__main__":
         print(f'持续检测中，此时游戏开始的最大阈值是{game_kaishi[2]}，游戏继续的最大阈值是{game_jixu[2]}')
         if game_kaishi[2] > yuzhi_kaishi:
             print('检测到游戏开始页面')
+            i = 0
             while game_kaishi[2] > yuzhi_kaishi:   # 需要一直点击准备，如果只执行一次，在队友不准备的情况下，就会跳过这个步骤。
-                i = 0
                 left_down(handle, game_kaishi[0], game_kaishi[1])
-                time.sleep(random.uniform(0.3, 0.5))
+                time.sleep(random.uniform(0.5, 0.9))
                 left_up(handle, game_kaishi[0], game_kaishi[1])
-                time.sleep(random.uniform(0.3, 0.5))
+                time.sleep(random.uniform(0.5, 0.9))
                 i += 1
                 print(game_kaishi[2])
-                print(f'正在第{i}次狂点挑战按钮···')
+                print(f'正在第{i}次狂点挑战按钮···坐标是x:{game_kaishi[0]},y:{game_kaishi[1]}')
                 image = capture(handle)
                 game = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
                 game_kaishi = youxi(game, img_kaishi)  # 检测挑战页面
@@ -166,14 +166,14 @@ if __name__ == "__main__":
                     break
         if game_jixu[2] > yuzhi_jixu:
             print('检测到继续挑战页面')
+            j = 0
             while game_jixu[2] > yuzhi_jixu:
-                j = 0
                 left_down(handle, game_jixu[0], game_jixu[1])
                 time.sleep(random.uniform(0.3, 0.5))
                 left_up(handle, game_jixu[0], game_jixu[1])
                 time.sleep(random.uniform(0.3, 0.5))
                 j += 1
-                print(f'正在第{j}次狂点继续继续继续继续···')
+                print(f'正在第{j}次狂点继续继续继续继续···坐标是x:{game_jixu[0]},y:{game_jixu[1]}')
                 image = capture(handle)
                 game = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
                 game_jixu = youxi(game, img_jixu)  # 检测到结算页面
