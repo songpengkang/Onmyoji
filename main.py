@@ -22,10 +22,16 @@ ClientToScreen = windll.user32.ClientToScreen
 WM_MOUSEMOVE = 0x0200
 WM_LBUTTONDOWN = 0x0201
 WM_LBUTTONUP = 0x202
+SetWindowPos = windll.user32.SetWindowPos
+SWP_NOSIZE = 0x0001
+SWP_NOMOVE = 0X0002
+SWP_NOZORDER = 0x0004
 
 # 图片路径
 img_kaishi = './duibi_img/huodong.png'
 img_jixu = './duibi_img/jixu.png'
+yuzhi_kaishi = 0.94  # 游戏开始时，检测到的最大阈值
+yuzhi_jixu = 0.95    # 游戏继续挑战时，检测到的最大阈值
 # 排除缩放干扰
 windll.user32.SetProcessDPIAware()
 
@@ -52,13 +58,24 @@ def capture(handle: HWND):
     # 截图是BGRA排列，因此总元素个数需要乘以4
     total_bytes = width*height*4
     buffer = bytearray(total_bytes)
-    byte_array = c_ubyte*total_bytes
+    byte_array = c_ubyte * total_bytes
     GetBitmapBits(bitmap, total_bytes, byte_array.from_buffer(buffer))
     DeleteObject(bitmap)
     DeleteObject(cdc)
     ReleaseDC(handle, dc)
     # 返回截图数据为numpy.ndarray
     return np.frombuffer(buffer, dtype=np.uint8).reshape(height, width, 4)
+
+
+def resize_window(handle: HWND, width: int, height: int):
+    """设置窗口大小为width × height
+
+    Args:
+        handle (HWND): 窗口句柄
+        width (int): 宽
+        height (int): 高
+    """
+    SetWindowPos(handle, 0, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER)
 
 
 def move_to(handle: HWND, x: int, y: int):
@@ -112,7 +129,7 @@ def youxi(img_bg,img_path):
     bottom_right = top_left[0] + w, top_left[1] + h
     zuobiao_x = random.randint(top_left[0], bottom_right[0])
     zuobiao_y = random.randint(top_left[1], bottom_right[1])
-    return zuobiao_x, zuobiao_y, max_val, top_left, bottom_right
+    return zuobiao_x, zuobiao_y, max_val
 
 
 if __name__ == "__main__":
@@ -121,39 +138,46 @@ if __name__ == "__main__":
         windll.shell32.ShellExecuteW(
             None, "runas", sys.executable, __file__, None, 1)
     handle = windll.user32.FindWindowW(None, "阴阳师-网易游戏")
+    resize_window(handle, 1136, 670)
     # 游戏开始界面
     while True:
         image = capture(handle)
         # 转为灰度图
         game = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
-        game_kaishi = youxi(game, img_kaishi)
-        print('游戏等待开始中')
-        print(game_kaishi[2])
-        if game_kaishi[2] > 0.94:
-            time.sleep(random.uniform(1.1,2.2))
-            left_down(handle, game_kaishi[0], game_kaishi[1])
-            time.sleep(random.uniform(0.5, 1))
-            left_up(handle, game_kaishi[0], game_kaishi[1])
-            print('游戏已经开始了')
-            time.sleep(5)
-            while True:
+        game_kaishi = youxi(game, img_kaishi)      # 检测挑战页面
+        game_jixu = youxi(game, img_jixu)          # 检测到结算页面
+        print(f'持续检测中，此时游戏开始的最大阈值是{game_kaishi[2]}，游戏继续的最大阈值是{game_jixu[2]}')
+        if game_kaishi[2] > yuzhi_kaishi:
+            print('检测到游戏开始页面')
+            while game_kaishi[2] > yuzhi_kaishi:   # 需要一直点击准备，如果只执行一次，在队友不准备的情况下，就会跳过这个步骤。
+                i = 0
+                left_down(handle, game_kaishi[0], game_kaishi[1])
+                time.sleep(random.uniform(0.3, 0.5))
+                left_up(handle, game_kaishi[0], game_kaishi[1])
+                time.sleep(random.uniform(0.3, 0.5))
+                i += 1
+                print(game_kaishi[2])
+                print(f'正在第{i}次狂点挑战按钮···')
                 image = capture(handle)
-                game1 = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
-                game_jixu = youxi(game1, img_jixu)
-                # cv2.rectangle(game1, game_jixu[3], game_jixu[4], (0, 0, 255), 2)
-                # cv2.imshow('Match Template', game1)
-                # cv2.waitKey()
-                print('游戏进行中')
-                print(game_jixu[2])
-                if game_jixu[2] > 0.99:
-                    time.sleep(random.uniform(1.1, 2.2))
-                    left_down(handle, game_jixu[0], game_jixu[1])
-                    time.sleep(random.uniform(0.5, 1.0))
-                    left_up(handle, game_jixu[0], game_jixu[1])
-                    print('已经完成了点击游戏继续操作')
+                game = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
+                game_kaishi = youxi(game, img_kaishi)  # 检测挑战页面
+                if game_kaishi[2] < yuzhi_kaishi:   # 当队友准备完毕，游戏开始以后，检测结果会小于0.94，则break跳过点击挑战按钮
+                    print('游戏开始了···')
                     break
-
-
-
+        if game_jixu[2] > yuzhi_jixu:
+            print('检测到继续挑战页面')
+            while game_jixu[2] > yuzhi_jixu:
+                j = 0
+                left_down(handle, game_jixu[0], game_jixu[1])
+                time.sleep(random.uniform(0.3, 0.5))
+                left_up(handle, game_jixu[0], game_jixu[1])
+                time.sleep(random.uniform(0.3, 0.5))
+                j += 1
+                print(f'正在第{j}次狂点继续继续继续继续···')
+                image = capture(handle)
+                game = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
+                game_jixu = youxi(game, img_jixu)  # 检测到结算页面
+                if game_jixu[2] < yuzhi_jixu:  # 如果小于结算的最大阈值，说明结算完了，正在回到开始页面
+                    break
 
 
