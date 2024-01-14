@@ -32,6 +32,7 @@ img_kaishi = './duibi_img/huodong.png'
 img_jixu = './duibi_img/jixu.png'
 yuzhi_kaishi = 0.94  # 游戏开始时，检测到的最大阈值
 yuzhi_jixu = 0.95    # 游戏继续挑战时，检测到的最大阈值
+jiancecishu = 0      # 设置检测次数，大于多少次则停止
 # 排除缩放干扰
 windll.user32.SetProcessDPIAware()
 
@@ -146,10 +147,13 @@ if __name__ == "__main__":
         game = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
         game_kaishi = youxi(game, img_kaishi)      # 检测挑战页面
         game_jixu = youxi(game, img_jixu)          # 检测到结算页面
-        print(f'持续检测中，此时游戏开始的最大阈值是{game_kaishi[2]}，游戏继续的最大阈值是{game_jixu[2]}')
+        time.sleep(1)
+        jiancecishu += 1
+        print(f'持续检测中，此时游戏开始的最大阈值是{game_kaishi[2]}，游戏继续的最大阈值是{game_jixu[2]}，这是第{jiancecishu}次检测')
         if game_kaishi[2] > yuzhi_kaishi:
             print('检测到游戏开始页面')
             i = 0
+            jiancecishu = 0  # 重置检测次数
             while game_kaishi[2] > yuzhi_kaishi:   # 需要一直点击准备，如果只执行一次，在队友不准备的情况下，就会跳过这个步骤。
                 left_down(handle, game_kaishi[0], game_kaishi[1])
                 time.sleep(random.uniform(0.5, 0.9))
@@ -161,12 +165,13 @@ if __name__ == "__main__":
                 image = capture(handle)
                 game = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
                 game_kaishi = youxi(game, img_kaishi)  # 检测挑战页面
-                if game_kaishi[2] < yuzhi_kaishi:   # 当队友准备完毕，游戏开始以后，检测结果会小于0.94，则break跳过点击挑战按钮
+                if game_kaishi[2] < yuzhi_kaishi or i > 10:   # 当队友准备完毕，游戏开始以后，检测结果会小于0.94，则break跳过点击挑战按钮
                     print('游戏开始了···')
                     break
         if game_jixu[2] > yuzhi_jixu:
             print('检测到继续挑战页面')
             j = 0
+            jiancecishu = 0  # 重置检测次数
             while game_jixu[2] > yuzhi_jixu:
                 left_down(handle, game_jixu[0], game_jixu[1])
                 time.sleep(random.uniform(0.3, 0.5))
@@ -177,7 +182,9 @@ if __name__ == "__main__":
                 image = capture(handle)
                 game = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
                 game_jixu = youxi(game, img_jixu)  # 检测到结算页面
-                if game_jixu[2] < yuzhi_jixu:  # 如果小于结算的最大阈值，说明结算完了，正在回到开始页面
+                if game_jixu[2] < yuzhi_jixu or j > 10:  # 如果小于结算的最大阈值，说明结算完了，正在回到开始页面
                     break
+        if jiancecishu > 100:
+            break
 
 
