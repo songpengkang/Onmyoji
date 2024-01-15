@@ -30,7 +30,7 @@ SWP_NOZORDER = 0x0004
 # 图片路径
 img_kaishi = './duibi_img/huodong.png'
 img_jixu = './duibi_img/jixu.png'
-yuzhi_kaishi = 0.94  # 游戏开始时，检测到的最大阈值
+yuzhi_kaishi = 0.93  # 游戏开始时，检测到的最大阈值
 yuzhi_jixu = 0.95    # 游戏继续挑战时，检测到的最大阈值
 jiancecishu = 0      # 设置检测次数，大于多少次则停止
 # 排除缩放干扰
@@ -149,6 +149,7 @@ if __name__ == "__main__":
         game_jixu = youxi(game, img_jixu)          # 检测到结算页面
         time.sleep(1)
         jiancecishu += 1
+        zhongzhi = 0          # 设置终止条件
         print(f'持续检测中，此时游戏开始的最大阈值是{game_kaishi[2]}，游戏继续的最大阈值是{game_jixu[2]}，这是第{jiancecishu}次检测')
         if game_kaishi[2] > yuzhi_kaishi:
             print('检测到游戏开始页面')
@@ -160,6 +161,7 @@ if __name__ == "__main__":
                 left_up(handle, game_kaishi[0], game_kaishi[1])
                 time.sleep(random.uniform(0.5, 0.9))
                 i += 1
+                zhongzhi = i
                 print(game_kaishi[2])
                 print(f'正在第{i}次狂点挑战按钮···坐标是x:{game_kaishi[0]},y:{game_kaishi[1]}')
                 image = capture(handle)
@@ -178,13 +180,14 @@ if __name__ == "__main__":
                 left_up(handle, game_jixu[0], game_jixu[1])
                 time.sleep(random.uniform(0.3, 0.5))
                 j += 1
+                zhongji = j
                 print(f'正在第{j}次狂点继续继续继续继续···坐标是x:{game_jixu[0]},y:{game_jixu[1]}')
                 image = capture(handle)
                 game = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
                 game_jixu = youxi(game, img_jixu)  # 检测到结算页面
                 if game_jixu[2] < yuzhi_jixu or j > 10:  # 如果小于结算的最大阈值，说明结算完了，正在回到开始页面
                     break
-        if jiancecishu > 100:
+        if jiancecishu > 100 or zhongzhi > 9:
             break
 
 
