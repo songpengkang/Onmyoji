@@ -28,9 +28,12 @@ SWP_NOMOVE = 0X0002
 SWP_NOZORDER = 0x0004
 
 # 图片路径
-img_kaishi = './duibi_img/huodong.png'
-img_jixu = './duibi_img/jixu.png'
-yuzhi_kaishi = 0.93  # 游戏开始时，检测到的最大阈值
+# img_kaishi = './img/huodong.png'
+img_kaishi = './img/huntu.png'   # 魂土
+img_jixu = './img/jixu.png'
+img_shengli = './img/shengli.png'
+yuzhi_kaishi = 0.95  # 游戏开始时，检测到的最大阈值
+yuzhi_shengli = 0.93  # 游戏胜利时，检测到的最大阈值
 yuzhi_jixu = 0.95    # 游戏继续挑战时，检测到的最大阈值
 jiancecishu = 0      # 设置检测次数，大于多少次则停止
 # 排除缩放干扰
@@ -146,6 +149,7 @@ if __name__ == "__main__":
         # 转为灰度图
         game = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
         game_kaishi = youxi(game, img_kaishi)      # 检测挑战页面
+        game_shengli = youxi(game, img_shengli)    # 检测到胜利页面
         game_jixu = youxi(game, img_jixu)          # 检测到结算页面
         time.sleep(1)
         jiancecishu += 1
@@ -169,6 +173,25 @@ if __name__ == "__main__":
                 game_kaishi = youxi(game, img_kaishi)  # 检测挑战页面
                 if game_kaishi[2] < yuzhi_kaishi or i > 10:   # 当队友准备完毕，游戏开始以后，检测结果会小于0.94，则break跳过点击挑战按钮
                     print('游戏开始了···')
+                    break
+        if game_shengli[2] > yuzhi_shengli:
+            print('检测到游戏胜利页面')
+            k = 0
+            jiancecishu = 0  # 重置检测次数
+            while game_shengli[2] > yuzhi_shengli:  # 需要一直点击准备，如果只执行一次，在队友不准备的情况下，就会跳过这个步骤。
+                left_down(handle, game_shengli[0], game_shengli[1])
+                time.sleep(random.uniform(0.5, 0.9))
+                left_up(handle, game_shengli[0], game_shengli[1])
+                time.sleep(random.uniform(0.5, 0.9))
+                k += 1
+                zhongzhi = k
+                print(game_shengli[2])
+                print(f'正在第{k}次狂点游戏胜利按钮···坐标是x:{game_shengli[0]},y:{game_shengli[1]}')
+                image = capture(handle)
+                game = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
+                game_shengli = youxi(game, img_shengli)  # 检测胜利页面
+                if game_shengli[2] < yuzhi_shengli or k > 10:  # 当队友准备完毕，游戏开始以后，检测结果会小于0.94，则break跳过点击挑战按钮
+                    print('游戏结束了，正在结算···')
                     break
         if game_jixu[2] > yuzhi_jixu:
             print('检测到继续挑战页面')
