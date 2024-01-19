@@ -28,12 +28,11 @@ SWP_NOMOVE = 0X0002
 SWP_NOZORDER = 0x0004
 
 # 图片路径
-# img_kaishi = './img/huodong.png'
-img_kaishi = './img/huntu.png'   # 魂土
+img_kaishi = './img/hunwang.png'
 img_jixu = './img/jixu.png'
 img_shengli = './img/shengli.png'
 yuzhi_kaishi = 0.95  # 游戏开始时，检测到的最大阈值
-yuzhi_shengli = 0.93  # 游戏胜利时，检测到的最大阈值
+yuzhi_shengli = 0.95  # 游戏胜利时，检测到的最大阈值
 yuzhi_jixu = 0.95    # 游戏继续挑战时，检测到的最大阈值
 jiancecishu = 0      # 设置检测次数，大于多少次则停止
 # 排除缩放干扰
@@ -154,7 +153,7 @@ if __name__ == "__main__":
         time.sleep(1)
         jiancecishu += 1
         zhongzhi = 0          # 设置终止条件
-        print(f'持续检测中，此时游戏开始的最大阈值是{game_kaishi[2]}，游戏继续的最大阈值是{game_jixu[2]}，这是第{jiancecishu}次检测')
+        print(f'持续检测中，此时游戏开始的最大阈值是{game_kaishi[2]}，游戏胜利的最大阈值是{game_shengli[2]}，游戏继续的最大阈值是{game_jixu[2]}，这是第{jiancecishu}次检测')
         if game_kaishi[2] > yuzhi_kaishi:
             print('检测到游戏开始页面')
             i = 0
